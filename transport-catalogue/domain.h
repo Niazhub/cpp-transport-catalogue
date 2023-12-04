@@ -1,6 +1,7 @@
 #pragma once
 #include "geo.h"
 #include "svg.h"
+#include "graph.h"
 #include <set>
 #include <string>
 #include <vector>
@@ -18,6 +19,13 @@ namespace domain {
             std::string bus_name_;
             std::vector<Stop*> bus_to_stops_;
             bool is_roundtrip;
+
+            Bus& operator++() {
+                if (!bus_to_stops_.empty()) {
+                    ++(bus_to_stops_.begin());
+                }
+                return *this;
+            }
         };
 
         struct BusInfo {
@@ -30,6 +38,20 @@ namespace domain {
         struct StopInfo {
             std::set<std::string> buses;
             bool is_some_bus;
+        };
+
+        struct RouteOutPut {
+            std::string type;
+            std::string stop_name;
+            std::string bus;
+            int span_count;
+            double time;
+        };
+
+        struct RouteInfo {
+            double total_time = 0.0;
+            std::vector<RouteOutPut> stat_route_output;
+            std::string error;
         };
 
         struct BusQueryes {
@@ -51,6 +73,8 @@ namespace domain {
             int id;
             std::string type;
             std::string name;
+            std::string from;
+            std::string to;
         };
 
         struct RendererColor {
@@ -68,10 +92,27 @@ namespace domain {
             std::vector<svg::Color> color_palette;
         };
 
+        struct RoutingSettings {
+            int bus_wait_time;
+            double bus_velocity;
+        };
+
+        struct EdgeData {
+            size_t from;
+            size_t to;
+            double weight;
+
+            bool operator==(const EdgeData& other) const {
+                return from == other.from && to == other.to && weight == other.weight;
+            }
+        };
+        
         std::vector<BusQueryes> struct_bus_base;
         std::vector<StopQueryes> struct_stop_base;
-        std::vector<DataStat> struct_data_stat;
+        std::vector<DataStat> struct_data_stat; 
+        RouteInfo stat_route_info;
         RendererColor rend_color;
+        RoutingSettings routing_settings;
 
         struct PairHash {
             std::size_t operator() (const std::pair<Stop*, Stop*>& p) const {
@@ -80,5 +121,15 @@ namespace domain {
                 return h1 + h2;
             }
         };
+
+        struct EdgeDataHash {
+            std::size_t operator() (const EdgeData& p) const {
+                auto h1 = std::hash<size_t>{}(p.from);
+                auto h2 = std::hash<size_t>{}(p.to);
+                auto h3 = std::hash<double>{}(p.weight);
+                return h1 + h2 + h3;
+            }
+        };
+
 	};
 }

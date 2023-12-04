@@ -7,7 +7,7 @@
 #include <iomanip>
 
 namespace request_handler {
-    class RequestHandler : public catalogue::TransportCatalogue{
+    class RequestHandler : public catalogue::TransportCatalogue {
     public:
         RequestHandler(TransportCatalogue& catalog);
 

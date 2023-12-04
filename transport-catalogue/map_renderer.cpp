@@ -164,7 +164,7 @@ void renderer::MapRenderer::RenderBuses(std::ostream& out) {
     SphereProjector sphere(coordinates.begin(), coordinates.end(), rend_color_.width, rend_color_.height, rend_color_.padding);
 
     RenderPolylineStops(document, sphere);
-    
+
     RenderBusesName(document, sphere);
 
     std::vector<Stop*> sorted_stops_name;

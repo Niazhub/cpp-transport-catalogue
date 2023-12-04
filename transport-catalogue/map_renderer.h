@@ -78,7 +78,7 @@ namespace renderer {
         double zoom_coeff_ = 0;
     };
 
-    class MapRenderer : public virtual domain::Domain{
+    class MapRenderer : public virtual domain::Domain {
     public:
         void SetBuses(domain::Domain::Bus buses);
 
