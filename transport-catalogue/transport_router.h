@@ -11,8 +11,8 @@ using namespace std;
 namespace router {
 	class TransportRouter : catalogue::TransportCatalogue {
 	public:
-		/*Добавляю объект domain_, так как иначе все поля в нем удаляются, ведь добавлялись они в файле json_reader. Раньше я не передавал его,
-		так как использовал domain только для заполнения структур и их возврата, но сейчас уже нужны добавленные в json_reader'e данные.*/
+		/*Р”РѕР±Р°РІР»СЏСЋ РѕР±СЉРµРєС‚ domain_, С‚Р°Рє РєР°Рє РёРЅР°С‡Рµ РІСЃРµ РїРѕР»СЏ РІ РЅРµРј СѓРґР°Р»СЏСЋС‚СЃСЏ, РІРµРґСЊ РґРѕР±Р°РІР»СЏР»РёСЃСЊ РѕРЅРё РІ С„Р°Р№Р»Рµ json_reader. Р Р°РЅСЊС€Рµ СЏ РЅРµ РїРµСЂРµРґР°РІР°Р» РµРіРѕ,
+		С‚Р°Рє РєР°Рє РёСЃРїРѕР»СЊР·РѕРІР°Р» domain С‚РѕР»СЊРєРѕ РґР»СЏ Р·Р°РїРѕР»РЅРµРЅРёСЏ СЃС‚СЂСѓРєС‚СѓСЂ Рё РёС… РІРѕР·РІСЂР°С‚Р°, РЅРѕ СЃРµР№С‡Р°СЃ СѓР¶Рµ РЅСѓР¶РЅС‹ РґРѕР±Р°РІР»РµРЅРЅС‹Рµ РІ json_reader'e РґР°РЅРЅС‹Рµ.*/
 		TransportRouter(domain::Domain& domain, catalogue::TransportCatalogue& catalog, graph::DirectedWeightedGraph<double>& graph) : domain_(domain), catalog_(catalog), graph_(graph), router_(make_unique<graph::Router<double>>(graph_)) {
 			FillGraph();
 			graph::Router<double> router(graph_);
