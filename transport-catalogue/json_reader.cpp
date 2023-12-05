@@ -276,7 +276,7 @@ void json_reader::JsonReader::ParserQueryes(const json::Dict& dict, domain::Doma
 }
 
 void json_reader::JsonReader::InputData() {
-    std::string input;
+    /*std::string input;
     std::ostringstream input_for_parse;
     int braceCount = 0;
     while (std::getline(std::cin, input)) {
@@ -304,8 +304,22 @@ void json_reader::JsonReader::InputData() {
     }
 
     std::string strochka = input_for_parse.str();
-    std::istringstream s(strochka);
-    
+    std::istringstream s(strochka);*/
+
+    std::ifstream file("test_1_input.json"); // Открываем файл для чтения
+
+    if (!file.is_open()) {
+        std::cerr << "Unable to open the file." << std::endl;
+        return;
+    }
+
+    std::ostringstream ss;
+    ss << file.rdbuf(); // Читаем содержимое файла в строковый поток ss
+
+    std::string content = ss.str(); // Получаем содержимое файла в виде строки
+
+    std::istringstream s(content);
+
     json::Dict dict = json::Load(s).GetRoot().AsDict();
     domain::Domain domain;
     ParserQueryes(dict, domain);
@@ -316,10 +330,9 @@ void json_reader::JsonReader::InputData() {
 
     json::Array array;
 
-    router::TransportRouter router(domain, catalog_);
-    auto graph = router.AddGraph();
-    graph::Router route(graph);
-
+    graph::DirectedWeightedGraph<double> graph(catalog_.GetHashTableStops().size() * 2);
+    router::TransportRouter router(domain, catalog_, graph);
+    
     for (const auto& value : domain.struct_data_stat) {
         if (value.type == "Bus") {
             std::optional<BusInfo> bus_result = GetBusStat(value.name);
@@ -376,7 +389,7 @@ void json_reader::JsonReader::InputData() {
                 .EndDict().Build());
         }
         else if (value.type == "Route") {
-            RouteInfo route_info = router.GetRouterInfo(graph, route, value);
+            RouteInfo route_info = router.GetRouterInfo(value.from, value.to);
             if (!route_info.error.empty()) {
                 array.emplace_back(json::Builder{}
                     .StartDict()
