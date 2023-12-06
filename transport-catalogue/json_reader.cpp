@@ -276,7 +276,7 @@ void json_reader::JsonReader::ParserQueryes(const json::Dict& dict, domain::Doma
 }
 
 void json_reader::JsonReader::InputData() {
-    /*std::string input;
+    std::string input;
     std::ostringstream input_for_parse;
     int braceCount = 0;
     while (std::getline(std::cin, input)) {
@@ -304,21 +304,7 @@ void json_reader::JsonReader::InputData() {
     }
 
     std::string strochka = input_for_parse.str();
-    std::istringstream s(strochka);*/
-
-    std::ifstream file("test_1_input.json"); // Открываем файл для чтения
-
-    if (!file.is_open()) {
-        std::cerr << "Unable to open the file." << std::endl;
-        return;
-    }
-
-    std::ostringstream ss;
-    ss << file.rdbuf(); // Читаем содержимое файла в строковый поток ss
-
-    std::string content = ss.str(); // Получаем содержимое файла в виде строки
-
-    std::istringstream s(content);
+    std::istringstream s(strochka);
 
     json::Dict dict = json::Load(s).GetRoot().AsDict();
     domain::Domain domain;
@@ -330,8 +316,7 @@ void json_reader::JsonReader::InputData() {
 
     json::Array array;
 
-    graph::DirectedWeightedGraph<double> graph(catalog_.GetHashTableStops().size() * 2);
-    router::TransportRouter router(domain, catalog_, graph);
+    router::TransportRouter router(domain, catalog_);
     
     for (const auto& value : domain.struct_data_stat) {
         if (value.type == "Bus") {
@@ -389,18 +374,18 @@ void json_reader::JsonReader::InputData() {
                 .EndDict().Build());
         }
         else if (value.type == "Route") {
-            RouteInfo route_info = router.GetRouterInfo(value.from, value.to);
-            if (!route_info.error.empty()) {
+            optional<RouteInfo> route_info = router.GetRouterInfo(value.from, value.to);
+            if (!route_info.value().error.empty()) {
                 array.emplace_back(json::Builder{}
                     .StartDict()
-                        .Key("error_message").Value(route_info.error)
+                        .Key("error_message").Value(route_info.value().error)
                         .Key("request_id").Value(value.id)
                     .EndDict().Build());
             }
             else {
                 json::Array arr;
-                if (!route_info.stat_route_output.empty()) {
-                    for (const auto& route_output : route_info.stat_route_output) {
+                if (route_info.has_value()) {
+                    for (const auto& route_output : route_info.value().stat_route_output) {
                         if (route_output.type == "Wait") {
                             arr.emplace_back(json::Builder{}
                                 .StartDict()
@@ -424,7 +409,7 @@ void json_reader::JsonReader::InputData() {
                     .StartDict()
                         .Key("items").Value(arr)
                         .Key("request_id").Value(value.id)
-                        .Key("total_time").Value(route_info.total_time)
+                        .Key("total_time").Value(route_info.value().total_time)
                     .EndDict().Build());
             }
         }
