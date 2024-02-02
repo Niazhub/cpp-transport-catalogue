@@ -1,5 +1,4 @@
 #include "transport_router.h"
-#include "log_duration.h"
 
 void router::TransportRouter::FillGraph() {
 	for (const auto& bus : catalog_.GetHashTableBuses()) {
@@ -55,23 +54,50 @@ optional<domain::Domain::RouteInfo> router::TransportRouter::GetRouterInfo(strin
 		string bus_name = edges.at({ graph_->GetEdge(edge).from, graph_->GetEdge(edge).to, graph_->GetEdge(edge).weight });
 
 		Bus* bus = catalog_.FindBus(bus_name);
+		vector<int> vector_counts;
 		int spand_count = 0;
-		bool is_inside = false;
+		int count = 0;
+		string is_inside = "";
 
-		for (int i = 0; i < bus->bus_to_stops_.size(); ++i) {
-			if (stop_to == bus->bus_to_stops_[i] && is_inside) {
-				break;
+		if (!bus->is_roundtrip) {
+			for (int i = 0; i < bus->bus_to_stops_.size(); ++i) {
+				if ((stop_to == bus->bus_to_stops_[i] || stop_from == bus->bus_to_stops_[i])) {
+					if (is_inside != bus->bus_to_stops_[i]->stop_name_) {
+						vector_counts.push_back(spand_count);
+					}
+					is_inside = bus->bus_to_stops_[i]->stop_name_;
+					spand_count = 0;
+				}
+				if (!is_inside.empty()) {
+					spand_count++;
+				}
 			}
-			if (stop_from == bus->bus_to_stops_[i]) {
-				is_inside = true;
+			vector_counts.erase(std::remove(vector_counts.begin(), vector_counts.end(), 0), vector_counts.end());
+			auto min_it = min_element(vector_counts.begin(), vector_counts.end());
+			count = min_it == vector_counts.end() ? 0 : *min_it;
+		}
+		else {
+			for (int i = 0; i < bus->bus_to_stops_.size(); ++i) {
+				if (stop_from == bus->bus_to_stops_[i]) {
+					is_inside = bus->bus_to_stops_[i]->stop_name_;
+					spand_count = 0;
+				}
+				if (stop_to == bus->bus_to_stops_[i]) {
+					vector_counts.push_back(spand_count);
+					is_inside = "";
+					spand_count = 0;
+				}
+				if (!is_inside.empty()) {
+					spand_count++;
+				}
 			}
-			if (is_inside) {
-				spand_count++;
-			}
+			vector_counts.erase(std::remove(vector_counts.begin(), vector_counts.end(), 0), vector_counts.end());
+			auto min_it = min_element(vector_counts.begin(), vector_counts.end());
+			count = min_it == vector_counts.end() ? 0 : *min_it;
 		}
 
-		route_info->stat_route_output.push_back(RouteOutPut{"Wait" , stop_from->stop_name_, "", 0 , static_cast<double>(domain_.routing_settings.bus_wait_time)});
-		route_info->stat_route_output.push_back(RouteOutPut{"Bus" , "", bus_name, spand_count , graph_->GetEdge(edge).weight - domain_.routing_settings.bus_wait_time});
+		route_info->stat_route_output.push_back(RouteOutPut{ "Wait" , stop_from->stop_name_, "", 0 , static_cast<double>(domain_.routing_settings.bus_wait_time) });
+		route_info->stat_route_output.push_back(RouteOutPut{ "Bus" , "", bus_name, count, graph_->GetEdge(edge).weight - domain_.routing_settings.bus_wait_time });
 		time += graph_->GetEdge(edge).weight;
 	}
 

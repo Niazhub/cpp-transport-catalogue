@@ -13,6 +13,7 @@ namespace domain {
         struct Stop {
             std::string stop_name_;
             geo::Coordinates stop_coordinates_;
+            std::unordered_map<std::string, double> road_distances;
         };
 
         struct Bus {
@@ -130,6 +131,5 @@ namespace domain {
                 return h1 + h2 + h3;
             }
         };
-
 	};
 }

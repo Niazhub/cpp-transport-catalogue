@@ -80,7 +80,7 @@ namespace renderer {
 
     class MapRenderer : public virtual domain::Domain {
     public:
-        void SetBuses(domain::Domain::Bus buses);
+        void SetBuses(std::vector<domain::Domain::Bus> buses);
 
         void SetColorSettings(RendererColor rend_color);
 

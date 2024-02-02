@@ -11,8 +11,8 @@ svg::Point renderer::SphereProjector::operator()(geo::Coordinates coords) const 
     };
 }
 
-void renderer::MapRenderer::SetBuses(domain::Domain::Bus buses) {
-    buses_.push_back(buses);
+void renderer::MapRenderer::SetBuses(std::vector<domain::Domain::Bus> buses) {
+    buses_ = buses;
 }
 
 void renderer::MapRenderer::SetColorSettings(RendererColor rend_color) {

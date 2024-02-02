@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package serialization_catalogue;
+
+import "map_renderer.proto";
+import "transport_router.proto";
+
+message Stop {
+    string name = 1;
+    double lat = 2;
+    double lng = 3;
+    map<string, double> road_distance = 4;
+}
+
+message Bus {
+    string name = 1;
+    repeated Stop stops = 2;
+    bool roundtrip = 3;
+}
+
+message CatalogueList{
+    repeated Bus buses = 1;
+    repeated Stop stops = 2;
+    RendererColor rend_color = 3;
+    RoutingSettings routing_settings = 4;
+}

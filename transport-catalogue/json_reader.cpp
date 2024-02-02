@@ -3,15 +3,15 @@
 json_reader::JsonReader::JsonReader(TransportCatalogue& catalog)
     : RequestHandler(catalog), catalog_(catalog) {}
 
-void json_reader::JsonReader::ParserStops(domain::Domain& domain) {
+void json_reader::JsonReader::ParserStops() {
     for (const auto& value : domain.struct_stop_base) {
         if (value.type == "Stop") {
-            catalog_.AddStop({ value.name, {value.latitude, value.longitude} });
+            catalog_.AddStop({ value.name, {value.latitude, value.longitude}, {value.road_distances} });
         }
     }
 }
 
-void json_reader::JsonReader::ParserBuses(domain::Domain& domain) {
+void json_reader::JsonReader::ParserBuses() {
     for (const auto& value : domain.struct_bus_base) {
         if (value.type == "Bus") {
             std::vector<TransportCatalogue::Stop*> stops;
@@ -38,23 +38,20 @@ void json_reader::JsonReader::ParserBuses(domain::Domain& domain) {
                     }
                 }
             }
-            renderer::MapRenderer::SetBuses({ value.name, stops, value.is_roundtrip });
             catalog_.AddBus({ value.name, stops, value.is_roundtrip });
         }
     }
 }
 
-void json_reader::JsonReader::ParserDistance(domain::Domain& domain) {
-    for (const auto& value : domain.struct_stop_base) {
-        if (value.type == "Stop") {
-            for (const auto& val : value.road_distances) {
-                catalog_.AddStopDistance(value.name, val.first, val.second);
-            }
+void json_reader::JsonReader::ParserDistance() {
+    for (const auto& value : catalog_.GetHashTableStops()) {
+        for (const auto& val : value.second->road_distances) {
+            catalog_.AddStopDistance(value.first, val.first, val.second);
         }
     }
 }
 
-void json_reader::JsonReader::ParserBaseRequests(const std::pair<std::string, json::Node>& value_1, domain::Domain& domain) {
+void json_reader::JsonReader::ParserBaseRequests(const std::pair<std::string, json::Node>& value_1) {
     std::string name;
     BusQueryes bus;
     StopQueryes stop;
@@ -123,7 +120,7 @@ void json_reader::JsonReader::ParserBaseRequests(const std::pair<std::string, js
     }
 }
 
-void json_reader::JsonReader::ParserStatRequests(const std::pair<std::string, json::Node>& value_1, domain::Domain& domain) {
+void json_reader::JsonReader::ParserStatRequests(const std::pair<std::string, json::Node>& value_1) {
     DataStat stat_data;
     for (const auto& value_2 : value_1.second.AsArray()) {
         std::string type_query;
@@ -174,7 +171,7 @@ void json_reader::JsonReader::ParserStatRequests(const std::pair<std::string, js
     }
 }
 
-void json_reader::JsonReader::ParserRenderSettings(const std::pair<std::string, json::Node>& value_1, domain::Domain& domain) {
+void json_reader::JsonReader::ParserRenderSettings(const std::pair<std::string, json::Node>& value_1) {
     for (const auto& value : value_1.second.AsDict()) {
         if (value.first == "width") {
             domain.rend_color.width = value.second.AsDouble();
@@ -245,7 +242,7 @@ void json_reader::JsonReader::ParserRenderSettings(const std::pair<std::string, 
     }
 }
 
-void json_reader::JsonReader::ParserRoutingSettings(const std::pair<std::string, json::Node>& value_1, domain::Domain& domain) {
+void json_reader::JsonReader::ParserRoutingSettings(const std::pair<std::string, json::Node>& value_1) {
     for (const auto& value : value_1.second.AsDict()) {
         if (value.first == "bus_wait_time") {
             domain.routing_settings.bus_wait_time = value.second.AsInt();
@@ -256,87 +253,95 @@ void json_reader::JsonReader::ParserRoutingSettings(const std::pair<std::string,
     }
 }
 
-void json_reader::JsonReader::ParserQueryes(const json::Dict& dict, domain::Domain& domain) {
-    std::string query;
+void json_reader::JsonReader::ParserSerializationSettings(const std::pair<std::string, json::Node>& value_1) {
+    for (const auto& value : value_1.second.AsDict()) {
+        serialization_file = value.second.AsString();
+    }
+}
 
-    for(const auto& value_1 : dict) {
+void json_reader::JsonReader::ParserMakeBaseQueryes(const json::Dict& dict) {
+    for (const auto& value_1 : dict) {
         if (value_1.first == "base_requests") {
-            ParserBaseRequests(value_1, domain);
+            ParserBaseRequests(value_1);
         }
-        else if(value_1.first == "stat_requests") {
-            ParserStatRequests(value_1, domain);
+        else if (value_1.first == "stat_requests") {
+            ParserStatRequests(value_1);
         }
         else if (value_1.first == "render_settings") {
-            ParserRenderSettings(value_1, domain);
+            ParserRenderSettings(value_1);
         }
         else if (value_1.first == "routing_settings") {
-            ParserRoutingSettings(value_1, domain);
+            ParserRoutingSettings(value_1);
+        }
+        else if (value_1.first == "serialization_settings") {
+            ParserSerializationSettings(value_1);
         }
     }
 }
 
-void json_reader::JsonReader::InputData() {
-    std::string input;
-    std::ostringstream input_for_parse;
-    int braceCount = 0;
-    while (std::getline(std::cin, input)) {
-        input_for_parse << input;
-
-        for (char c : input) {
-            if (c == '{') {
-                braceCount++;
-            }
-            else if (c == '}') {
-                braceCount--;
-            }
-            else {
-                continue;
-            }
-
-            if (braceCount == 0) {
-                break;
-            }
+void json_reader::JsonReader::ParserProcessRequestsQueryes(const json::Dict& dict) {
+    for (const auto& value_1 : dict) {
+        if (value_1.first == "stat_requests") {
+            ParserStatRequests(value_1);
         }
-
-        if (braceCount == 0) {
-            break;
+        else if (value_1.first == "serialization_settings") {
+            ParserSerializationSettings(value_1);
         }
     }
+}
 
-    std::string strochka = input_for_parse.str();
-    std::istringstream s(strochka);
+void json_reader::JsonReader::MakeBase() {
+    ifstream in("make.json");
+    json::Dict dict = json::Load(in).GetRoot().AsDict();
+    ParserMakeBaseQueryes(dict);
 
-    json::Dict dict = json::Load(s).GetRoot().AsDict();
-    domain::Domain domain;
-    ParserQueryes(dict, domain);
+    ParserStops();
+    ParserBuses();
+    ParserDistance();
 
-    ParserStops(domain);
-    ParserBuses(domain);
-    ParserDistance(domain);
+    std::ofstream file(serialization_file, std::ios::binary);
+    if (!file.is_open()) {
+        cerr << "File is not opened";
+        return;
+    }
+    serialization::Serialization(file, catalog_, domain);
+    file.close();
+}
+
+void json_reader::JsonReader::ProcessRequests() {
+    ifstream in("process_requests.json");
+    json::Dict dict = json::Load(in).GetRoot().AsDict();
+
+    ParserProcessRequestsQueryes(dict);
+
+    std::ifstream file(serialization_file, std::ios::binary);
+    serialization::Deserialization(file, catalog_, domain);
+}
+
+void json_reader::JsonReader::OutData() {
+    router::TransportRouter router(domain, catalog_);
 
     json::Array array;
 
-    router::TransportRouter router(domain, catalog_);
-    
     for (const auto& value : domain.struct_data_stat) {
         if (value.type == "Bus") {
             std::optional<BusInfo> bus_result = GetBusStat(value.name);
             if (bus_result.has_value()) {
                 array.emplace_back(json::Builder{}
                     .StartDict()
-                        .Key("curvature").Value(bus_result.value().curvature)
-                        .Key("request_id").Value(value.id)
-                        .Key("route_length").Value(bus_result.value().route_length)
-                        .Key("stop_count").Value(bus_result.value().total_stops)
-                        .Key("unique_stop_count").Value(bus_result.value().unique_stops)
+                    .Key("curvature").Value(bus_result.value().curvature)
+                    .Key("request_id").Value(value.id)
+                    .Key("route_length").Value(bus_result.value().route_length)
+                    .Key("stop_count").Value(bus_result.value().total_stops)
+                    .Key("unique_stop_count").Value(bus_result.value().unique_stops)
                     .EndDict().Build());
             }
             else {
                 std::string str = "not found";
                 array.emplace_back(json::Builder{}
                     .StartDict()
-                        .Key("request_id").Value(value.id)
-                        .Key("error_message").Value(str)
+                    .Key("request_id").Value(value.id)
+                    .Key("error_message").Value(str)
                     .EndDict().Build());
             }
         }
@@ -346,8 +351,8 @@ void json_reader::JsonReader::InputData() {
                 std::string str = "not found";
                 array.emplace_back(json::Builder{}
                     .StartDict()
-                        .Key("request_id").Value(value.id)
-                        .Key("error_message").Value(str)
+                    .Key("request_id").Value(value.id)
+                    .Key("error_message").Value(str)
                     .EndDict().Build());
             }
             else if (stop_result.is_some_bus == true) {
@@ -357,20 +362,21 @@ void json_reader::JsonReader::InputData() {
                 }
                 array.emplace_back(json::Builder{}
                     .StartDict()
-                        .Key("buses").Value(arr)
-                        .Key("request_id").Value(value.id)
+                    .Key("buses").Value(arr)
+                    .Key("request_id").Value(value.id)
                     .EndDict().Build());
             }
         }
         else if (value.type == "Map") {
+            SetBuses(catalog_.GetBuses());
             SetColorSettings(domain.rend_color);
             std::ostringstream out;
             RenderBuses(out);
             std::string str = out.str();
             array.emplace_back(json::Builder{}
                 .StartDict()
-                    .Key("map").Value(str)
-                    .Key("request_id").Value(value.id)
+                .Key("map").Value(str)
+                .Key("request_id").Value(value.id)
                 .EndDict().Build());
         }
         else if (value.type == "Route") {
@@ -378,8 +384,8 @@ void json_reader::JsonReader::InputData() {
             if (!route_info.value().error.empty()) {
                 array.emplace_back(json::Builder{}
                     .StartDict()
-                        .Key("error_message").Value(route_info.value().error)
-                        .Key("request_id").Value(value.id)
+                    .Key("error_message").Value(route_info.value().error)
+                    .Key("request_id").Value(value.id)
                     .EndDict().Build());
             }
             else {
@@ -407,12 +413,13 @@ void json_reader::JsonReader::InputData() {
                 }
                 array.emplace_back(json::Builder{}
                     .StartDict()
-                        .Key("items").Value(arr)
-                        .Key("request_id").Value(value.id)
-                        .Key("total_time").Value(route_info.value().total_time)
+                    .Key("items").Value(arr)
+                    .Key("request_id").Value(value.id)
+                    .Key("total_time").Value(route_info.value().total_time)
                     .EndDict().Build());
             }
         }
     }
-    json::Print(json::Document{ array }, std::cout);
+    ofstream out("out.json");
+    json::Print(json::Document{ array }, out);
 }

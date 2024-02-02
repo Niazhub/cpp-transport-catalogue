@@ -154,6 +154,14 @@ std::vector<domain::Domain::Bus> catalogue::TransportCatalogue::GetBuses() const
 	return buses;
 }
 
+std::vector<domain::Domain::Stop> catalogue::TransportCatalogue::GetStops() const {
+	std::vector<Stop> stops;
+	for (const auto& value : stops_) {
+		stops.push_back(value);
+	}
+	return stops;
+}
+
 std::unordered_map<std::string_view, domain::Domain::Bus*> catalogue::TransportCatalogue::GetHashTableBuses() const {
 	return hash_table_buses_;
 }

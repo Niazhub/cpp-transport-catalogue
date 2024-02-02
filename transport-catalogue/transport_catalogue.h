@@ -10,6 +10,7 @@
 #include <set>
 #include <map>
 #include <functional>
+#include <limits>
 #include "geo.h"
 #include "domain.h"
 
@@ -29,6 +30,7 @@ namespace catalogue {
         double GetDistance(std::string_view from, std::string_view to) const;
         double GetLongDistance(size_t from, size_t to, Bus* bus) const;
         std::vector<Bus> GetBuses() const;
+        std::vector<Stop> GetStops() const;
         std::unordered_map<std::string_view, Bus*> GetHashTableBuses() const;
         std::unordered_map<std::string_view, Stop*> GetHashTableStops() const;
 
