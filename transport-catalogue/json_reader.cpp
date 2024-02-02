@@ -291,8 +291,7 @@ void json_reader::JsonReader::ParserProcessRequestsQueryes(const json::Dict& dic
 }
 
 void json_reader::JsonReader::MakeBase() {
-    ifstream in("make.json");
-    json::Dict dict = json::Load(in).GetRoot().AsDict();
+    json::Dict dict = json::Load(cin).GetRoot().AsDict();
     ParserMakeBaseQueryes(dict);
 
     ParserStops();
@@ -309,8 +308,7 @@ void json_reader::JsonReader::MakeBase() {
 }
 
 void json_reader::JsonReader::ProcessRequests() {
-    ifstream in("process_requests.json");
-    json::Dict dict = json::Load(in).GetRoot().AsDict();
+    json::Dict dict = json::Load(cin).GetRoot().AsDict();
 
     ParserProcessRequestsQueryes(dict);
 
@@ -420,6 +418,5 @@ void json_reader::JsonReader::OutData() {
             }
         }
     }
-    ofstream out("out.json");
-    json::Print(json::Document{ array }, out);
+    json::Print(json::Document{ array }, cout);
 }
